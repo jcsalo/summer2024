@@ -1,0 +1,172 @@
+---
+title: "Body Composition in Esophageal Cancer"
+author: "<Name Here>"
+date: '`r format(Sys.time(), "%d %B, %Y")`'
+output:
+  pdf_document: default
+  html_document: default
+  always_allow_html: true
+---
+<style type="text/css">
+.main-container {
+  max-width: 1200px!important;
+  margin-left: auto;
+  margin-right: auto;
+}
+</style>
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,message=FALSE,comment='',warning=FALSE)
+knitr::opts_chunk$set(dev = 'pdf')
+options(xtable.comment = FALSE)
+
+library(tidyverse)
+library(tibble)
+library(pander)
+library(janitor)
+library(survival)
+library(prodlim)
+library(reporttools)
+library(gmodels)
+library(gtsummary)
+library(flextable)
+library(Hmisc)
+```
+
+# Patient Cohort
+
+Patient from CMC with a diagnosis of esophageal squamous cell, adenocarcinoma, or neuroendocrine carcinoma with diagnosis dates between January 1, 2010 and March 1, 2023 treated with chemoradiation with curative intent.  Inclusion criteria:
+
+- CT or PET at diagnosis available for analysis
+- CT or PET after chemoradiation available for analysis
+
+Patient data downloaded from REDCap using PrePostCRT Scans report
+
+```{r}
+load('cmc.RData')
+datafile<-attr(cmc,"datafile")
+creation_timedate<-attr(cmc,"creation_timedate")
+automatica_source_file<-attr(cmc,"am_data")
+
+cmc<-cmc%>%
+  droplevels()%>%
+  droplevels.data.frame()
+
+cmc_surg<-cmc%>%
+  filter(Treatment == 'ChemoRT + Surgery')
+```
+Name of datafile: `r datafile`
+
+Creation Date of datafile: `r creation_timedate`
+
+AutoMATiCA Source file: `r automatica_source_file`
+
+##  Dataset
+
+Number of records:
+
+```{r}
+nrow(cmc)
+```
+
+Variable Names:
+
+```{r}
+colnames(cmc)
+```
+
+# Demographics
+
+Sex
+```{r}
+table(cmc$Sex)
+
+```
+
+```{r}
+#addmargins includes marginal totals
+addmargins(table(cmc$Sex,exclude=NULL))
+
+```
+
+Age at Diagnosis
+
+```{r}
+summary(cmc$age_dx)
+```
+
+
+***Add tables for Race and Ethnicity**
+
+***Add table for age_75 (number of patients greater than or less than 75)***
+
+# Treatment
+
+Definitive cancer treatment
+```{r}
+
+addmargins(table(cmc$Treatment,exclude=NULL))
+
+
+```
+
+Feeding Tube Placement Prior to Chemoradiation
+
+```{r}
+
+addmargins(table(cmc$`Feeding Tube preCRT`))
+
+```
+
+*Why is total number of cases different from what we saw above?*
+
+```{r}
+# To show cases with "NA" for this variable:
+addmargins(table(cmc$`Feeding Tube preCRT`,exclude=NULL))
+
+```
+
+# Crosstabs
+
+Is feeding tube placement performed at the same rate for patient who receive surgery and those who just recieve chemoradiation?
+
+```{r}
+addmargins(table(cmc$`Feeding Tube preCRT`,cmc$Treatment,exclude=NULL))
+
+```
+In order to perform a more precise analysis, we will exclude the patients who do not have feeding tube status recorded:
+
+```{r}
+ft<-cmc%>%
+  filter(!is.na(`Feeding Tube preCRT`))
+
+nrow(ft)
+
+```
+```{r}
+
+addmargins(table(ft$`Feeding Tube preCRT`,ft$Treatment,exclude=NULL))
+```
+
+
+What are the proportions?
+
+```{r}
+# Note that "margin=2" calculates column proportions
+prop.table(table(ft$`Feeding Tube preCRT`,ft$Treatment,exclude=NULL),margin=2)
+
+```
+```{r}
+
+fisher.test(table(ft$`Feeding Tube preCRT`,ft$Treatment,exclude=NULL))
+
+```
+
+Chi Square Test
+
+```{r}
+
+chisq.test(table(ft$`Feeding Tube preCRT`,ft$Treatment,exclude=NULL))
+
+```
