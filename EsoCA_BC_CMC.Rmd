@@ -25,13 +25,13 @@ library(tidyverse)
 library(tibble)
 library(pander)
 library(janitor)
-library(survival)
-library(prodlim)
-library(reporttools)
-library(gmodels)
-library(gtsummary)
-library(flextable)
-library(Hmisc)
+#library(survival)
+#library(prodlim)
+#library(reporttools)
+#library(gmodels)
+#library(gtsummary)
+#library(flextable)
+#library(Hmisc)
 ```
 
 # Patient Cohort
@@ -334,7 +334,7 @@ kruskal.test(smg_delta_pct ~ Sex, data = cmc)
 boxplot(smi_delta_pct ~ Sex, data=cmc)
 
 boxplot(smg_delta_pct ~ Sex, data=cmc)
-`
+```
 
 ## Postoperative Outcomes
 
