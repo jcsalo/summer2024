@@ -1,0 +1,352 @@
+---
+title: "Body Composition in Esophageal Cancer"
+author: "<Name Here>"
+date: '`r format(Sys.time(), "%d %B, %Y")`'
+output:
+  pdf_document: default
+  html_document: default
+  always_allow_html: true
+---
+<style type="text/css">
+.main-container {
+  max-width: 1200px!important;
+  margin-left: auto;
+  margin-right: auto;
+}
+</style>
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,message=FALSE,comment='',warning=FALSE)
+knitr::opts_chunk$set(dev = 'pdf')
+options(xtable.comment = FALSE)
+
+library(tidyverse)
+library(tibble)
+library(pander)
+library(janitor)
+library(survival)
+library(prodlim)
+library(reporttools)
+library(gmodels)
+library(gtsummary)
+library(flextable)
+library(Hmisc)
+```
+
+# Patient Cohort
+
+Patient from CMC with a diagnosis of esophageal squamous cell, adenocarcinoma, or neuroendocrine carcinoma with diagnosis dates between January 1, 2010 and March 1, 2023 treated with chemoradiation with curative intent.  Inclusion criteria:
+
+- CT or PET at diagnosis available for analysis
+- CT or PET after chemoradiation available for analysis
+
+Patient data downloaded from REDCap using PrePostCRT Scans report
+
+```{r}
+load('cmc.RData')
+datafile<-attr(cmc,"datafile")
+creation_timedate<-attr(cmc,"creation_timedate")
+automatica_source_file<-attr(cmc,"am_data")
+
+cmc<-cmc%>%
+  droplevels()%>%
+  droplevels.data.frame()
+
+cmc_surg<-cmc%>%
+  filter(Treatment == 'ChemoRT + Surgery')
+```
+Name of datafile: `r datafile`
+
+Creation Date of datafile: `r creation_timedate`
+
+AutoMATiCA Source file: `r automatica_source_file`
+
+##  Dataset
+
+Number of records:
+
+```{r}
+nrow(cmc)
+```
+
+Variable Names:
+
+```{r}
+colnames(cmc)
+```
+
+# Demographics
+
+Sex
+```{r}
+table(cmc$Sex)
+```
+Add marginal totals
+
+```{r}
+#addmargins includes marginal totals
+addmargins(table(cmc$Sex,exclude=NULL))
+
+```
+
+Age at Diagnosis
+
+```{r}
+summary(cmc$age_dx)
+```
+
+
+***Add tables for Race and Ethnicity**
+
+***Add table for age_75 (number of patients greater than or less than 75)***
+
+# Treatment
+
+Definitive cancer treatment
+```{r}
+
+addmargins(table(cmc$Treatment,exclude=NULL))
+
+
+```
+
+Feeding Tube Placement Prior to Chemoradiation
+
+```{r}
+
+addmargins(table(cmc$`Feeding Tube preCRT`))
+
+```
+
+*Why is total number of cases different from what we saw above?*
+
+```{r}
+# To show cases with "NA" for this variable:
+addmargins(table(cmc$`Feeding Tube preCRT`,exclude=NULL))
+
+```
+
+# Analysis of Proportions
+
+Is feeding tube placement performed at the same rate for patient who receive surgery and those who just recieve chemoradiation?
+
+```{r}
+addmargins(table(cmc$`Feeding Tube preCRT`,cmc$Treatment,exclude=NULL))
+
+```
+In order to perform a more precise analysis, we will exclude the patients who do not have feeding tube status recorded:
+
+```{r}
+ft<-cmc%>%
+  filter(!is.na(`Feeding Tube preCRT`))
+
+nrow(ft)
+
+```
+```{r}
+
+addmargins(table(ft$`Feeding Tube preCRT`,ft$Treatment,exclude=NULL))
+```
+
+
+What are the proportions?
+
+```{r}
+# Note that "margin=2" calculates column proportions
+prop.table(table(ft$`Feeding Tube preCRT`,ft$Treatment,exclude=NULL),margin=2)
+
+```
+```{r}
+
+fisher.test(table(ft$`Feeding Tube preCRT`,ft$Treatment,exclude=NULL))
+
+```
+
+Chi Square Test
+
+```{r}
+
+chisq.test(table(ft$`Feeding Tube preCRT`,ft$Treatment,exclude=NULL))
+
+```
+***Conclusion:  Feeding tube placement rates are not different between surgery group and non-surgery group**
+
+# Analysis of Continuous variables
+
+What is the age distribution of the patients?
+
+```{r}
+hist(cmc$age_dx)
+
+```
+
+What is the age distribution of patients who get surgery?
+
+```{r}
+addmargins(table(cmc$Treatment))
+
+```
+
+```{r}
+surg<-cmc%>%
+  filter(Treatment == 'ChemoRT + Surgery')
+nrow(surg)
+#note double ==
+
+crt<-cmc%>%
+  filter(Treatment == 'ChemoRT')
+nrow(crt)
+#note double ==
+
+```
+
+```{r}
+hist(surg$age_dx)
+hist(crt$age_dx)
+```
+
+
+```{r}
+
+cmc%>%
+group_by(Treatment) %>%
+  summarise(
+    count = n(),
+    mean = mean(age_dx, na.rm = TRUE),
+    sd = sd(age_dx, na.rm = TRUE),
+    median = median(age_dx, na.rm = TRUE),
+    IQR = IQR(age_dx, na.rm = TRUE)
+  )
+
+```
+
+```{r}
+kruskal.test(age_dx ~ Treatment, data = cmc)
+```
+
+```{r}
+
+boxplot(age_dx~ Treatment, data=cmc)
+
+```
+
+
+# Body composition
+
+There are a number of body composition measures obtained at the time of diagnosis.  Are there differences in these measures between patients who get surgery and those that don't?
+
+- dx_smi
+- dx_muscle_density
+- dx_smg
+- dx_vat_csa
+- dx_sat_csa
+
+
+
+*Prepare an analysis of differences between the surgery group and the chemoradiation group in terms of body composition measures*
+
+```{r}
+kruskal.test(dx_smi ~ Treatment, data = cmc)
+kruskal.test(dx_muscle_density ~ Treatment, data = cmc)
+kruskal.test(dx_smg ~ Treatment, data = cmc)
+kruskal.test(dx_vat_csa ~ Treatment, data = cmc)
+kruskal.test(dx_sat_csa ~ Treatment, data = cmc)
+
+
+```
+
+
+
+# Changes in body composition
+
+There are a number of measures of changes in body composition as a result of chemoradiation:
+
+- smi_delta_pct
+- density_delta_pct
+- smg_delta_pct
+- vat_delta_pct
+- sat_delta_pct
+
+
+```{r}
+
+hist(cmc$smi_delta_pct)
+
+
+```
+
+
+
+*Are there differences between the surgery and chemoradiation groups in terms of changes in body composition?*
+
+```{r}
+
+cmc%>%
+group_by(Treatment) %>%
+  summarise(
+    count = n(),
+    smi_mean = mean(smi_delta_pct, na.rm = TRUE),
+    smi_sd = sd(smi_delta_pct, na.rm = TRUE),
+    smi_median = median(smi_delta_pct, na.rm = TRUE),
+    smi_IQR = IQR(smi_delta_pct, na.rm = TRUE),
+    smg_mean = mean(smg_delta_pct, na.rm = TRUE),
+    smg_sd = sd(smg_delta_pct, na.rm = TRUE),
+    smg_median = median(smg_delta_pct, na.rm = TRUE),
+    smg_IQR = IQR(smg_delta_pct, na.rm = TRUE)
+  )
+```
+
+
+```{r}
+kruskal.test(smi_delta_pct ~ Treatment, data = cmc)
+
+boxplot(smi_delta_pct ~ Treatment, data=cmc)
+```
+
+
+Are there differences of changes in body composition between men and women?
+
+```{r}
+
+cmc%>%
+group_by(Sex) %>%
+  summarise(
+    count = n(),
+    smi_mean = mean(smi_delta_pct, na.rm = TRUE),
+    smi_sd = sd(smi_delta_pct, na.rm = TRUE),
+    smi_median = median(smi_delta_pct, na.rm = TRUE),
+    smi_IQR = IQR(smi_delta_pct, na.rm = TRUE),
+    smg_mean = mean(smg_delta_pct, na.rm = TRUE),
+    smg_sd = sd(smg_delta_pct, na.rm = TRUE),
+    smg_median = median(smg_delta_pct, na.rm = TRUE),
+    smg_IQR = IQR(smg_delta_pct, na.rm = TRUE)
+  )
+```
+
+
+
+```{r}
+kruskal.test(smi_delta_pct ~ Sex, data = cmc)
+
+kruskal.test(smg_delta_pct ~ Sex, data = cmc)
+
+boxplot(smi_delta_pct ~ Sex, data=cmc)
+
+boxplot(smg_delta_pct ~ Sex, data=cmc)
+`
+
+## Postoperative Outcomes
+
+```{r}
+kruskal.test(length_of_stay ~ age75, data = cmc_surg)
+
+kruskal.test(length_of_stay ~ smi10, data = cmc_surg)
+
+
+kruskal.test(length_of_stay ~ `Feeding Tube preCRT`, data = cmc_surg)
+
+boxplot(smi_delta_pct ~ age75, data=cmc)
+
+boxplot(smg_delta_pct ~ age75, data=cmc)
+```

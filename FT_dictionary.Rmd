@@ -1,0 +1,84 @@
+---
+title: "Esophageal CA Body Composition Data Dictionary"
+output:
+  pdf_document: default
+  html_document: default
+  classoption: landscape
+---
+
+```{r setupdict, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(width='\\linewidth')
+```
+
+## Data Dictionary
+
+
+| Variable  | Definition | Values         |
+| :------------ | :------------------------- | ----------------------------: |
+| **Identifiers**|
+|*record_id*|||
+
+|**Treatment Factors**|
+|*Treatment*|Medical Record Number||
+|*Facility*|Cerner idenifier||
+|**Demographics**|
+
+
+|*Sex*||F,M|
+|*Race*||White, Black, Asian, Other|
+|*Ethnicity*|Ethnicity|Hispanic, Non-Hispanic|
+|**Tumor**|
+|*Topo*|Insurance at Dx (CR Star)||
+|*Histology*|Insurance at Dx (CR Star)||
+|*Clinical_T*|Insurance at Dx (CR Star)||
+|*Clinical_N*|Insurance at Dx (CR Star)||
+|*Cllinical_M*|Insurance at Dx (CR Star)||
+|*feeding_tube.factor*|Insurance at Dx (CR Star)||
+|*Histology*|Insurance at Dx (CR Star)||
+|dead|*patient_status*=4||
+|dead01|vital status|0,1|
+|*Cancer*|
+|*morpho_group*|derived from *Morpho*|Adeno,SCCA,Other|
+|*cT*|AJCC clinical T||
+|*cN*|AJCC clinical N||
+|*cM*|AJCC clinical M||
+|*Treatment*|
+
+
+|**Morphometrics**|
+|**weight_class4**|BMI 25, 30, 35|Normal, Over, Obese,MObese|
+|weight_class3|BMI 25, 30 |Normal, Over, Obese|
+|weight_class2|BMI 30 |Normal, Obese|
+|***BMI***|*height_cm+preop_kg*||
+|**preop_wt_loss**|*usual_kg*-*consult_kg*||
+|**prior_wt_percent**|(*usual_kg*-*consult_kg*)/*consult_kg*|Ratio- not percent|
+|*height_cm*|||
+|*usual_kg*|Usual weight prior to illess||
+|*prior_kg_3mo*|Weight 3 mo prior to consulation||
+| **Adjunctive Tx**|
+|**ChemoRT**|*Neoadjuvant*|Yes,No|
+
+|*pT*|AJCC path T||
+|*pN*|AJCC path N||
+|*pM*|AJCC path M||
+|**mcT_**|~*cT* (dummy coded)|1,2,3|
+|**mcT3**|~*cT* |T1-2,T3-4|
+|**mcN_**|~*cN*|0,1|
+|**mpT**|~*pT* (ordered)||
+|**mpN**|~*pN*|0,1|
+|**Body Composition**|
+|**preop_area_m**|Preop cross-sectional muscle area at L3 -29- +150HU||
+|**smi_preop**|Preop cross-sectional muscle area/ height in m^2||
+|**sarco**|Sarcopenia - Prado definition: M:pre_op_smi<52.4 F: pre_op_smi<38.5|Yes,No|
+|**pre_op_area_mean**|Preop muscle density lat L3 in Hounsfield Units||
+|**preop_area_tat**|Preop Total Adipose Tissue area at L3||
+|**preop_area_dat**|Preop Deep Adipose Tissue area at L3||
+|**preop_area_imat**|Preop Intramuscular Adipose Tissue area at L3||
+|**preop_area_sat**|Preop Subcutaneous Adipose Tissue area at L3||
+|pre_op_perimeter|Preop perimeter at L3||
+|pre_op_area_total| Preop total cross-sectional area at L3||
+|pre_op_m40150|Preop dense muscle area at L3 +40 - +150HU||
+|dsmi_preop|Preop dense cross-sectional muscle area/ height in m^2||
+
+Table: Data Dictionary
