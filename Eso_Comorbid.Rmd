@@ -24,13 +24,13 @@ options(xtable.comment = FALSE)
 library(tidyverse)
 library(tibble)
 library(pander)
-library(janitor)
+#library(janitor)
 library(survival)
-library(prodlim)
+#library(prodlim)
 library(reporttools)
-library(gmodels)
-library(gtsummary)
-library(flextable)
+#library(gmodels)
+#library(gtsummary)
+#library(flextable)
 library(Hmisc)
 ```
 
@@ -85,7 +85,7 @@ addmargins(table(cmcs$Sex,exclude=NULL))
 
 ```
 
-Age at Diagnosis
+### Age at Diagnosis
 
 ```{r}
 summary(cmcs$age_dx)
@@ -113,7 +113,7 @@ What is the age distribution of patients who get surgery?
 addmargins(table(cmcs$Treatment))
 
 ```
-## Cormorbidity Score
+# Cormorbidity Score
 
 Cormorbidity score constructed as the sum of comorbidities:
 
@@ -130,10 +130,17 @@ Cormorbidity score constructed as the sum of comorbidities:
 - PVD Peripheral Vascualar Disease
 - TIA Transient Ischemic Attach
 
+Score constructed as 0-4 (Patients with a score of 5 or more were grouped with those with score of 4)
+
+Cormorbidity score (0-4) compared to mortality at 90 days after surgery
+
 ```{r}
 library(DescTools)
-comorbidmort<-table(cmcs$comorbidity,cmcs$mort_surg_90)
+comorbidmort<-table(cmcs$comorbidity,cmcs$mort_surg_90,dnn=c("Score","Mortality at 90d"))
+
 addmargins(comorbidmort)
+
+cat("\n\n\n")
 prop.table(comorbidmort,margin=1)
 
 
@@ -145,6 +152,7 @@ Cochran-Armitage Test for Trend:
 CochranArmitageTest(comorbidmort)
 ```
 
+# Effect of age on Postoperative mortality at 90 days
 
 ```{r}
 
