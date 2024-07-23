@@ -115,6 +115,21 @@ addmargins(table(cmcs$Treatment))
 ```
 ## Cormorbidity Score
 
+Cormorbidity score constructed as the sum of comorbidities:
+
+- COPD Chronic Obstructive Pulmonary Disease
+- CRF Chronic Renal Failure
+- CHF Congestive Heart Failure
+- CVA = stroke
+- Dyspnea
+- Diabetes
+- Hypertension
+- Impaired sensorium
+- MI
+- PCI = Coronary arter intervention
+- PVD Peripheral Vascualar Disease
+- TIA Transient Ischemic Attach
+
 ```{r}
 library(DescTools)
 comorbidmort<-table(cmcs$comorbidity,cmcs$mort_surg_90)
