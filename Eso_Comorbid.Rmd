@@ -1,0 +1,160 @@
+---
+title: "Body Composition in Esophageal Cancer"
+author: "<Name Here>"
+date: '`r format(Sys.time(), "%d %B, %Y")`'
+output:
+  pdf_document: default
+  html_document: default
+  always_allow_html: true
+---
+<style type="text/css">
+.main-container {
+  max-width: 1200px!important;
+  margin-left: auto;
+  margin-right: auto;
+}
+</style>
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,message=FALSE,comment='',warning=FALSE)
+knitr::opts_chunk$set(dev = 'pdf')
+options(xtable.comment = FALSE)
+
+library(tidyverse)
+library(tibble)
+library(pander)
+library(janitor)
+library(survival)
+library(prodlim)
+library(reporttools)
+library(gmodels)
+library(gtsummary)
+library(flextable)
+library(Hmisc)
+```
+
+# Patient Cohort
+
+Patient from CMC undergoing esophagectomy after January 2010
+
+Patient data downloaded from REDCap using Esophagectomy report
+
+```{r}
+load('cmcs.RData')
+datafile<-attr(cmcs,"datafile")
+creation_timedate<-attr(cmcs,"creation_timedate")
+automatica_source_file<-attr(cmcs,"am_data")
+
+cmcs<-cmcs%>%
+  droplevels()%>%
+  droplevels.data.frame()
+
+```
+Name of datafile: `r datafile`
+
+Creation Date of datafile: `r creation_timedate`
+
+AutoMATiCA Source file: `r automatica_source_file`
+
+##  Dataset
+
+Number of records:
+
+```{r}
+nrow(cmcs)
+```
+
+Variable Names:
+
+```{r}
+colnames(cmcs)
+```
+
+# Demographics
+
+Sex
+```{r}
+table(cmcs$Sex)
+
+```
+
+```{r}
+#addmargins includes marginal totals
+addmargins(table(cmcs$Sex,exclude=NULL))
+
+```
+
+Age at Diagnosis
+
+```{r}
+summary(cmcs$age_dx)
+```
+
+
+***Add tables for Race and Ethnicity**
+
+***Add table for age_75 (number of patients greater than or less than 75)***
+
+
+
+# Analysis of Continuous variables
+
+What is the age distribution of the patients?
+
+```{r}
+hist(cmcs$age_dx)
+
+```
+
+What is the age distribution of patients who get surgery?
+
+```{r}
+addmargins(table(cmcs$Treatment))
+
+```
+## Cormorbidity Score
+
+```{r}
+library(DescTools)
+comorbidmort<-table(cmcs$comorbidity,cmcs$mort_surg_90)
+addmargins(comorbidmort)
+prop.table(comorbidmort,margin=1)
+
+
+```
+
+Cochran-Armitage Test for Trend:
+
+```{r}
+CochranArmitageTest(comorbidmort)
+```
+
+
+```{r}
+
+cmcs%>%
+group_by(mort_surg_90) %>%
+  summarise(
+    count = n(),
+    mean = mean(age_dx, na.rm = TRUE),
+    sd = sd(age_dx, na.rm = TRUE),
+    median = median(age_dx, na.rm = TRUE),
+    IQR = IQR(age_dx, na.rm = TRUE)
+  )
+
+```
+
+```{r}
+
+
+kruskal.test(age_dx ~ mort_surg_90, data = cmcs)
+```
+
+```{r}
+
+boxplot(age_dx~ mort_surg_90, data=cmcs)
+
+```
+
+
