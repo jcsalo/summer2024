@@ -1,0 +1,431 @@
+---
+title: "Body Composition in Esophageal Cancer"
+author: "<Name Here>"
+date: '`r format(Sys.time(), "%d %B, %Y")`'
+output:
+  pdf_document: default
+  html_document: default
+  always_allow_html: true
+---
+<style type="text/css">
+.main-container {
+  max-width: 1200px!important;
+  margin-left: auto;
+  margin-right: auto;
+}
+</style>
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,message=FALSE,comment='',warning=FALSE)
+knitr::opts_chunk$set(dev = 'pdf')
+options(xtable.comment = FALSE)
+
+library(tidyverse)
+library(tibble)
+library(pander)
+library(janitor)
+#library(survival)
+#library(prodlim)
+#library(reporttools)
+#library(gmodels)
+#library(gtsummary)
+#library(flextable)
+#library(Hmisc)
+```
+
+# Patient Cohort
+
+Patient from CMC with a diagnosis of esophageal squamous cell, adenocarcinoma, or neuroendocrine carcinoma with diagnosis dates between January 1, 2010 and March 1, 2023 treated with chemoradiation with curative intent.  Inclusion criteria:
+
+- CT or PET at diagnosis available for analysis
+- CT or PET after chemoradiation available for analysis
+
+Patient data downloaded from REDCap using PrePostCRT Scans report
+
+```{r}
+load('cmc.RData')
+datafile<-attr(cmc,"datafile")
+creation_timedate<-attr(cmc,"creation_timedate")
+automatica_source_file<-attr(cmc,"am_data")
+
+cmc<-cmc%>%
+  droplevels()%>%
+  droplevels.data.frame()
+
+cmc_surg<-cmc%>%
+  filter(Treatment == 'ChemoRT + Surgery')
+```
+Name of datafile: `r datafile`
+
+Creation Date of datafile: `r creation_timedate`
+
+AutoMATiCA Source file: `r automatica_source_file`
+
+##  Dataset
+
+Number of records:
+
+```{r}
+nrow(cmc)
+```
+
+Variable Names:
+
+```{r}
+colnames(cmc)
+```
+
+# Demographics
+
+Sex
+```{r}
+table(cmc$Sex)
+```
+Add marginal totals
+
+```{r}
+#addmargins includes marginal totals
+addmargins(table(cmc$Sex,exclude=NULL))
+
+```
+
+Age at Diagnosis
+
+```{r}
+summary(cmc$age_dx)
+```
+
+
+***Add tables for Race and Ethnicity***
+
+***Add table for age75 (number of patients greater than or less than 75)***
+
+# Treatment
+
+Definitive cancer treatment
+```{r}
+
+addmargins(table(cmc$Treatment,exclude=NULL))
+
+
+```
+
+# Feeding Tube Placement Prior to Chemoradiation
+
+```{r}
+
+addmargins(table(cmc$`Feeding Tube preCRT`))
+
+```
+\clearpage
+
+# Feeding Tube ~ Sex
+
+
+Is feeding tube placement performed at the same rate in men and women??
+
+```{r}
+addmargins(table(cmc$`Feeding Tube preCRT`,cmc$Sex,exclude=NULL))
+
+```
+
+
+What are the proportions?
+
+```{r}
+# Note that "margin=2" calculates column proportions
+prop.table(table(cmc$`Feeding Tube preCRT`,cmc$Sex,exclude=NULL),margin=2)
+
+```
+```{r}
+
+fisher.test(table(cmc$`Feeding Tube preCRT`,cmc$Sex,exclude=NULL))
+
+```
+
+Chi Square Test
+
+```{r}
+
+chisq.test(table(cmc$`Feeding Tube preCRT`,cmc$Sex,exclude=NULL))
+
+```
+\clearpage
+
+# Feeding tube Placement ~ Treatment
+
+Is feeding tube placement performed at the same rate for patient who receive surgery and those who just receive chemoradiation?
+
+```{r}
+addmargins(table(cmc$`Feeding Tube preCRT`,cmc$Treatment,exclude=NULL))
+
+```
+
+
+What are the proportions?
+
+```{r}
+# Note that "margin=2" calculates column proportions
+prop.table(table(cmc$`Feeding Tube preCRT`,cmc$Treatment,exclude=NULL),margin=2)
+
+```
+```{r}
+
+fisher.test(table(cmc$`Feeding Tube preCRT`,cmc$Treatment,exclude=NULL))
+
+```
+
+Chi Square Test
+
+```{r}
+
+chisq.test(table(cmc$`Feeding Tube preCRT`,cmc$Treatment,exclude=NULL))
+
+```
+
+
+**Conclusion:  Feeding tube placement prior to chemoradiation is more common in patients who subsequently undergo surgery**
+
+\clearpage
+
+# Feeding Tube ~ Age
+
+What is the age distribution of the patients?
+
+```{r}
+hist(cmc$age_dx)
+```
+
+
+
+### Feeding tube placement as a function of age
+
+```{r}
+
+cmc%>%
+group_by(`Feeding Tube preCRT`) %>%
+  summarise(
+    count = n(),
+    mean = mean(age_dx, na.rm = TRUE),
+    sd = sd(age_dx, na.rm = TRUE),
+    median = median(age_dx, na.rm = TRUE),
+    IQR = IQR(age_dx, na.rm = TRUE)
+  )
+
+```
+
+```{r}
+kruskal.test(age_dx ~ `Feeding Tube preCRT`, data = cmc)
+```
+
+```{r}
+
+boxplot(age_dx~ `Feeding Tube preCRT`, data=cmc)
+
+```
+
+
+# Feeding Tube ~ Weight Loss Class
+
+Martin et al created a scoring system for weight loss based upon the increase in mortality for cancer patients in a large patient sample. Patients are categorized based upon with BMI and percent body weight loss.  The asusmption is that 10% body weight loss has more impact in a patient with SMI of 24 than it does in one with a BMI of 32.
+
+![MartinPaper](Slide2.png)
+
+The original paper used a scale of 0 to 4.  We have used the same criteria with a scale of 1-5:
+
+![MartinPaper](Slide1.png)
+
+
+
+```{r}
+library(rstatix)
+ftwtlossclass<-table(cmc$wt_loss_class4,cmc$`Feeding Tube preCRT`, exclude=NULL,dnn=c('Weight Loss Class', 'Feeding Tube preCRT'))
+
+ftwtlossclass
+
+cat('\n\n\n')
+
+prop.table(ftwtlossclass,margin=2)
+
+chisq.test(ftwtlossclass)
+
+prop_trend_test(ftwtlossclass,score = NULL)
+
+```
+
+*** patients with more severe weight loss (relative to BMI) are more likely to receive a feeding tube prior to chemoRT***
+
+
+
+\clearpage
+
+# Body composition
+
+There are a number of body composition measures obtained at the time of diagnosis.  Are there differences in these measures between patients who get feeding tubes  those that don't?
+
+- dx_smi
+- dx_muscle_density
+- dx_smg
+- dx_vat_csa
+- dx_sat_csa
+
+
+
+
+
+```{r}
+kruskal.test(dx_smi ~ `Feeding Tube preCRT`, data = cmc)
+kruskal.test(dx_muscle_density ~ `Feeding Tube preCRT`, data = cmc)
+kruskal.test(dx_smg ~ `Feeding Tube preCRT`, data = cmc)
+kruskal.test(dx_vat_csa ~ `Feeding Tube preCRT`, data = cmc)
+kruskal.test(dx_sat_csa ~ `Feeding Tube preCRT`, data = cmc)
+
+
+```
+
+
+
+
+# Changes in body composition
+
+There are a number of measures of changes in body composition as a result of chemoradiation:
+
+- smi_delta_pct
+- density_delta_pct
+- smg_delta_pct
+- vat_delta_pct
+- sat_delta_pct
+
+
+```{r}
+
+hist(cmc$smi_delta_pct)
+
+
+```
+
+
+
+*Are there differences between the feeding tube groups in terms of changes in body composition?*
+
+```{r}
+
+cmc%>%
+group_by(`Feeding Tube preCRT`) %>%
+  summarise(
+    count = n(),
+    smi_mean = mean(smi_delta_pct, na.rm = TRUE),
+    smi_sd = sd(smi_delta_pct, na.rm = TRUE),
+    smi_median = median(smi_delta_pct, na.rm = TRUE),
+    smi_IQR = IQR(smi_delta_pct, na.rm = TRUE),
+    smg_mean = mean(smg_delta_pct, na.rm = TRUE),
+    smg_sd = sd(smg_delta_pct, na.rm = TRUE),
+    smg_median = median(smg_delta_pct, na.rm = TRUE),
+    smg_IQR = IQR(smg_delta_pct, na.rm = TRUE)
+  )
+```
+
+### SMI
+
+```{r}
+kruskal.test(smi_delta_pct ~ `Feeding Tube preCRT`, data = cmc)
+
+boxplot(smi_delta_pct ~ `Feeding Tube preCRT`, data=cmc)
+```
+
+
+### SMG
+
+```{r}
+kruskal.test(smg_delta_pct ~ `Feeding Tube preCRT`, data = cmc)
+
+boxplot(smg_delta_pct ~ `Feeding Tube preCRT`, data=cmc)
+```
+
+
+Are there differences of changes in body composition between men and women?
+
+```{r}
+
+cmc%>%
+group_by(Sex) %>%
+  summarise(
+    count = n(),
+    smi_mean = mean(smi_delta_pct, na.rm = TRUE),
+    smi_sd = sd(smi_delta_pct, na.rm = TRUE),
+    smi_median = median(smi_delta_pct, na.rm = TRUE),
+    smi_IQR = IQR(smi_delta_pct, na.rm = TRUE),
+    smg_mean = mean(smg_delta_pct, na.rm = TRUE),
+    smg_sd = sd(smg_delta_pct, na.rm = TRUE),
+    smg_median = median(smg_delta_pct, na.rm = TRUE),
+    smg_IQR = IQR(smg_delta_pct, na.rm = TRUE)
+  )
+```
+
+
+
+```{r}
+kruskal.test(smi_delta_pct ~ Sex, data = cmc)
+
+kruskal.test(smg_delta_pct ~ Sex, data = cmc)
+
+boxplot(smi_delta_pct ~ Sex, data=cmc)
+
+boxplot(smg_delta_pct ~ Sex, data=cmc)
+```
+
+
+Are there differences of changes in body composition between men and women?
+
+```{r}
+
+cmc%>%
+group_by(Sex) %>%
+  summarise(
+    count = n(),
+    smi_mean = mean(smi_delta_pct, na.rm = TRUE),
+    smi_sd = sd(smi_delta_pct, na.rm = TRUE),
+    smi_median = median(smi_delta_pct, na.rm = TRUE),
+    smi_IQR = IQR(smi_delta_pct, na.rm = TRUE),
+    smg_mean = mean(smg_delta_pct, na.rm = TRUE),
+    smg_sd = sd(smg_delta_pct, na.rm = TRUE),
+    smg_median = median(smg_delta_pct, na.rm = TRUE),
+    smg_IQR = IQR(smg_delta_pct, na.rm = TRUE)
+  )
+```
+
+
+# Feeding Tube -> Postoperative Outcomes
+
+Length of Stay after surgery
+
+```{r}
+
+kruskal.test(length_of_stay ~ `Feeding Tube preCRT`, data = cmc_surg)
+
+kruskal.test(length_of_stay ~ `Feeding Tube preCRT`, data = cmc_surg)
+```
+
+Mortality after Surgery
+
+```{r}
+
+ftmort<-table(cmc_surg$mort_surg_90,cmc_surg$`Feeding Tube preCRT`, exclude=NULL)
+
+ftmort
+
+fisher.test(ftmort)
+```
+
+
+
+
+```{r}
+
+ftradmort<-table(cmc$mort_rad_365,cmc$`Feeding Tube preCRT`, exclude=NULL)
+
+ftradmort
+
+fisher.test(ftradmort)
+```
